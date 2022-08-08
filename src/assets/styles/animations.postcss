@@ -1,0 +1,14 @@
+.highlight {
+  @apply text-transparent;
+  @apply bg-clip-text;
+  background-image: linear-gradient(45deg, #aa85ff, #ffc39b);
+  animation: hue-rotation 1.2s linear infinite;
+}
+@keyframes hue-rotation {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(1turn);
+  }
+}
