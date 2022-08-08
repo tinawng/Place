@@ -8,7 +8,6 @@ const evtSource = new EventSource(`${$api.base_url}sse`)
 var MAP
 const MAP_SIZE = 1024
 const CANVAS_SCALE = 3
-const ZOOM = ref(5)
 const COLORS = new Map([
   ["pink-700", [190, 24, 93]],
   ["pink-500", [236, 72, 153]],
@@ -56,8 +55,10 @@ const pallete_translate_x = ref("0px")
 const pallete_translate_y = ref("0px")
 
 var canvas_can_move = false
-const cursor_canvas_x = ref(0)
-const cursor_canvas_y = ref(0)
+var canvas_can_place = false
+const canvas_zoom = ref(5)
+const cursor_canvas_x = ref(512)
+const cursor_canvas_y = ref(512)
 const canvas_view_translate_x = ref("0px")
 const canvas_view_translate_y = ref("0px")
 var canvas_move_frame_asked = false
@@ -97,7 +98,9 @@ function registerEventListeners() {
   window.addEventListener("mousedown", (e) => {
     if (e.button == 1 || e.button == 2) {
       e.preventDefault()
-      if (e.button == 1) canvas_can_move = true
+    }
+    if (e.button == 0 || e.button == 1) {
+      canvas_can_move = true
     }
   })
   window.addEventListener("mouseup", () => {
@@ -105,18 +108,13 @@ function registerEventListeners() {
   })
   window.addEventListener("contextmenu", (e) => e.preventDefault())
   window.addEventListener("wheel", (e) => {
-    ZOOM.value = numberClamp(ZOOM.value + (e.deltaY < 0 ? 0.2 : -0.2), 0.3, 8)
+    canvas_zoom.value = numberClamp(canvas_zoom.value + (e.deltaY < 0 ? 0.2 : -0.2), 0.3, 8)
   })
 
   scaled_canvas.value.addEventListener("mousedown", (e) => {
     if (e.button == 0) {
       show_pallete.value = false
-
-      const r = COLORS.get(selected_color.value)[0]
-      const g = COLORS.get(selected_color.value)[1]
-      const b = COLORS.get(selected_color.value)[2]
-
-      $api.placePixel({ ...getCursorCanvasPosition(e), r, g, b })
+      canvas_can_place = true
     } else if (e.button == 1) {
       show_pallete.value = false
     } else if (e.button == 2) {
@@ -125,7 +123,19 @@ function registerEventListeners() {
       pallete_translate_y.value = `${Math.floor(e.clientY)}px`
     }
   })
+  scaled_canvas.value.addEventListener("mouseup", (e) => {
+    if (!canvas_can_place) return
+
+    const r = COLORS.get(selected_color.value)[0]
+    const g = COLORS.get(selected_color.value)[1]
+    const b = COLORS.get(selected_color.value)[2]
+
+    $api.placePixel({ ...getCursorCanvasPosition(e), r, g, b })
+  })
   scaled_canvas.value.addEventListener("mousemove", (e) => {
+    if (canvas_can_place)
+      canvas_can_place = (e.movementX <= 1 && e.movementX >= -1) || (e.movementY <= 1 && e.movementY >= 1)
+
     let { x, y } = getCursorCanvasPosition(e)
     cursor_canvas_x.value = x
     cursor_canvas_y.value = y
@@ -133,8 +143,8 @@ function registerEventListeners() {
     if (canvas_can_move && !canvas_move_frame_asked) {
       canvas_move_frame_asked = true
       requestAnimationFrame(() => {
-        const delta_x = ((e.movementX * 5) / ZOOM.value) * 0.2
-        const delta_y = ((e.movementY * 5) / ZOOM.value) * 0.2
+        const delta_x = ((e.movementX * 5) / canvas_zoom.value) * 0.2
+        const delta_y = ((e.movementY * 5) / canvas_zoom.value) * 0.2
         canvas_view_translate_x.value = String(parseFloat(canvas_view_translate_x.value) + delta_x + "px")
         canvas_view_translate_y.value = String(parseFloat(canvas_view_translate_y.value) + delta_y + "px")
         canvas_move_frame_asked = false
@@ -145,8 +155,8 @@ function registerEventListeners() {
 
 function getCursorCanvasPosition(event) {
   const rect = scaled_canvas.value.getBoundingClientRect()
-  const x = Math.round((event.clientX - rect.left) / CANVAS_SCALE / ZOOM.value) - 1
-  const y = Math.round((event.clientY - rect.top) / CANVAS_SCALE / ZOOM.value) - 1
+  const x = Math.round((event.clientX - rect.left) / CANVAS_SCALE / canvas_zoom.value) - 1
+  const y = Math.round((event.clientY - rect.top) / CANVAS_SCALE / canvas_zoom.value) - 1
   return { x, y }
 }
 
@@ -196,7 +206,7 @@ function updateCanvas() {
       <icon class="w-4 lg:w-5" variant="edit" />
     </p>
     <p class="flex justify-end items-center gap-2">
-      <span>Middle Click</span>
+      <span>Click & Drag</span>
       <icon class="w-4 lg:w-5" variant="move" />
     </p>
     <p class="flex justify-end items-center gap-2">
@@ -212,7 +222,7 @@ function updateCanvas() {
 <style lang="postcss">
 .scaled_canvas {
   @apply border-2;
-  transform: scale(v-bind(ZOOM)) translate(v-bind(canvas_view_translate_x), v-bind(canvas_view_translate_y));
+  transform: scale(v-bind(canvas_zoom)) translate(v-bind(canvas_view_translate_x), v-bind(canvas_view_translate_y));
   image-rendering: pixelated;
 }
 .mini_map_canvas {
