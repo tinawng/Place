@@ -7,7 +7,7 @@
     "deploy": "ssh siyu \"(cd /home/pi/work/static-servers/place && rm -rf dist/)\" && scp -r ./dist siyu:/home/pi/work/static-servers/place && ssh siyu \"(cd /home/pi/work/static-servers/place && yarn compress && pm2 restart 'place')\""
   },
   "dependencies": {
-    "unplugin-vue-components": "^0.22.0",
+    "unplugin-vue-components": "^0.21.2",
     "vue": "^3.2.37",
     "vue-router": "^4.1.3",
     "@vitejs/plugin-vue": "^3.0.1",
