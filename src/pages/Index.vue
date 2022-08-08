@@ -1,6 +1,6 @@
 <script setup>
 import { ref, inject, onMounted } from "vue"
-import { numberClamp } from "@/assets/scripts/utils";
+import { numberClamp } from "@/assets/scripts/utils"
 
 const $api = inject("$api")
 const evtSource = new EventSource(`${$api.base_url}sse`)
@@ -105,7 +105,7 @@ function registerEventListeners() {
   })
   window.addEventListener("contextmenu", (e) => e.preventDefault())
   window.addEventListener("wheel", (e) => {
-    ZOOM.value = numberClamp(ZOOM.value + (e.deltaY < 0 ? .2 : -.2), .3, 8)
+    ZOOM.value = numberClamp(ZOOM.value + (e.deltaY < 0 ? 0.2 : -0.2), 0.3, 8)
   })
 
   scaled_canvas.value.addEventListener("mousedown", (e) => {
@@ -133,8 +133,8 @@ function registerEventListeners() {
     if (canvas_can_move && !canvas_move_frame_asked) {
       canvas_move_frame_asked = true
       requestAnimationFrame(() => {
-        const delta_x = e.movementX * 5 / ZOOM.value * 0.2
-        const delta_y = e.movementY * 5 / ZOOM.value * 0.2
+        const delta_x = ((e.movementX * 5) / ZOOM.value) * 0.2
+        const delta_y = ((e.movementY * 5) / ZOOM.value) * 0.2
         canvas_view_translate_x.value = String(parseFloat(canvas_view_translate_x.value) + delta_x + "px")
         canvas_view_translate_y.value = String(parseFloat(canvas_view_translate_y.value) + delta_y + "px")
         canvas_move_frame_asked = false
@@ -164,18 +164,20 @@ function updateCanvas() {
   <canvas ref="origin_canvas" class="mini_map_canvas" :width="MAP_SIZE" :height="MAP_SIZE" />
   <canvas ref="scaled_canvas" class="scaled_canvas" :width="MAP_SIZE*CANVAS_SCALE" :height="MAP_SIZE*CANVAS_SCALE" />
 
-  <div v-if="show_pallete" class="pallete__container">
-    <div
-      v-for="color in COLORS"
-      :key="color[0]"
-      :style="`background-color: rgb(${color[1].join()});`"
-      :class="{
+  <transition name="fade">
+    <div v-if="show_pallete" class="pallete__container">
+      <div
+        v-for="color in COLORS"
+        :key="color[0]"
+        :style="`background-color: rgb(${color[1].join()});`"
+        :class="{
         'border-2': color[0] == 'white',
         'border-4 border-white border-opacity-60': selected_color == color[0]
       }"
-      @click="selected_color = color[0]"
-    />
-  </div>
+        @click="selected_color = color[0]; show_pallete = false"
+      />
+    </div>
+  </transition>
 
   <div class="position__container">
     <span>X:</span>

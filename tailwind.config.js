@@ -4,7 +4,7 @@ module.exports = {
   content: ['./index.html', './src/**/*.{vue,js}'],
   theme: {
     transitionDuration: {
-      DEFAULT: '200ms'
+      DEFAULT: '100ms'
     },
     extend: {
       maxWidth: {
