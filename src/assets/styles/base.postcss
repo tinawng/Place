@@ -1,5 +1,4 @@
 @import "@/assets/styles/fonts.postcss";
-@import "@/assets/styles/animations.postcss";
 
 html {
   -ms-text-size-adjust: 100%;
@@ -12,6 +11,12 @@ html {
   touch-action: manipulation;
 
   font-family: "Inter var";
+
+  @apply overflow-hidden;
+}
+html, body, #app { @apply h-full; }
+#app {
+  @apply flex justify-center items-center;
 }
 
 :focus-visible { outline: transparent !important; }
