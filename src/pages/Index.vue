@@ -113,8 +113,9 @@ function registerEventListeners() {
 
   scaled_canvas.value.addEventListener("mousedown", (e) => {
     if (e.button == 0) {
+      // Prevent placement if palette was open
+      canvas_can_place = !show_pallete.value
       show_pallete.value = false
-      canvas_can_place = true
     } else if (e.button == 1) {
       show_pallete.value = false
     } else if (e.button == 2) {
