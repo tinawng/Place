@@ -135,7 +135,7 @@ function registerEventListeners() {
   })
   scaled_canvas.value.addEventListener("mousemove", (e) => {
     if (canvas_can_place)
-      canvas_can_place = (e.movementX <= 1 && e.movementX >= -1) || (e.movementY <= 1 && e.movementY >= 1)
+      canvas_can_place = (e.movementX <= 1 && e.movementX >= -1) || (e.movementY <= 1 && e.movementY >= -1)
 
     let { x, y } = getCursorCanvasPosition(e)
     cursor_canvas_x.value = x
