@@ -8,40 +8,7 @@ const evtSource = new EventSource(`${$api.base_url}sse`)
 var MAP
 const MAP_SIZE = 1024
 const CANVAS_SCALE = 3
-const COLORS = new Map([
-  ["pink-700", [190, 24, 93]],
-  ["pink-500", [236, 72, 153]],
-  ["pink-300", [249, 168, 212]],
-  ["rose-700", [190, 18, 60]],
-  ["rose-500", [244, 63, 94]],
-  ["rose-300", [253, 164, 175]],
-  ["amber-700", [180, 83, 9]],
-  ["amber-500", [245, 158, 11]],
-  ["amber-300", [252, 211, 77]],
-  ["teal-700", [15, 118, 110]],
-  ["teal-500", [20, 184, 166]],
-  ["teal-300", [94, 234, 212]],
-  ["emerald-700", [4, 120, 87]],
-  ["emerald-500", [16, 185, 129]],
-  ["emerald-300", [52, 211, 153]],
-  ["sky-700", [3, 105, 161]],
-  ["sky-500", [14, 165, 233]],
-  ["sky-300", [125, 211, 252]],
-  ["indigo-700", [67, 56, 202]],
-  ["indigo-500", [99, 102, 241]],
-  ["indigo-300", [165, 180, 252]],
-  ["fuchsia-700", [162, 28, 175]],
-  ["fuchsia-500", [217, 70, 239]],
-  ["fuchsia-300", [240, 171, 252]],
-  ["yellow-800", [133, 77, 14]],
-  ["yellow-600", [202, 138, 4]],
-  ["orange-300", [253, 186, 116]],
-  ["neutral-700", [64, 64, 64]],
-  ["neutral-500", [115, 115, 115]],
-  ["neutral-300", [212, 212, 212]],
-  ["white", [255, 255, 255]],
-  ["black", [0, 0, 0]],
-])
+var color_palette = ref()
 const connected_client = ref(0)
 
 const origin_canvas = ref()
@@ -50,9 +17,9 @@ const scaled_canvas = ref()
 var scaled_ctx
 
 const selected_color = ref("rose-500")
-const show_pallete = ref(false)
-const pallete_translate_x = ref("0px")
-const pallete_translate_y = ref("0px")
+const show_palette = ref(false)
+const palette_translate_x = ref("0px")
+const palette_translate_y = ref("0px")
 
 var canvas_can_move = false
 var canvas_can_place = false
@@ -83,6 +50,7 @@ evtSource.onmessage = function (event) {
 }
 
 onMounted(async () => {
+  color_palette.value = await $api.fetchColorPalette()
   connected_client.value = await $api.fetchConnectedClient()
   MAP = new Uint8ClampedArray(await $api.fetchMap())
 
@@ -114,22 +82,22 @@ function registerEventListeners() {
   scaled_canvas.value.addEventListener("mousedown", (e) => {
     if (e.button == 0) {
       // Prevent placement if palette was open
-      canvas_can_place = !show_pallete.value
-      show_pallete.value = false
+      canvas_can_place = !show_palette.value
+      show_palette.value = false
     } else if (e.button == 1) {
-      show_pallete.value = false
+      show_palette.value = false
     } else if (e.button == 2) {
-      show_pallete.value = !show_pallete.value
-      pallete_translate_x.value = `${Math.floor(e.clientX)}px`
-      pallete_translate_y.value = `${Math.floor(e.clientY)}px`
+      show_palette.value = !show_palette.value
+      palette_translate_x.value = `${Math.floor(e.clientX)}px`
+      palette_translate_y.value = `${Math.floor(e.clientY)}px`
     }
   })
   scaled_canvas.value.addEventListener("mouseup", (e) => {
     if (!canvas_can_place) return
 
-    const r = COLORS.get(selected_color.value)[0]
-    const g = COLORS.get(selected_color.value)[1]
-    const b = COLORS.get(selected_color.value)[2]
+    const r = color_palette.value.get(selected_color.value)[0]
+    const g = color_palette.value.get(selected_color.value)[1]
+    const b = color_palette.value.get(selected_color.value)[2]
 
     $api.placePixel({ ...getCursorCanvasPosition(e), r, g, b })
   })
@@ -176,16 +144,16 @@ function updateCanvas() {
   <canvas ref="scaled_canvas" class="scaled_canvas" :width="MAP_SIZE*CANVAS_SCALE" :height="MAP_SIZE*CANVAS_SCALE" />
 
   <transition name="fade">
-    <div v-if="show_pallete" class="pallete__container">
+    <div v-if="show_palette" class="palette__container">
       <div
-        v-for="color in COLORS"
+        v-for="color in color_palette"
         :key="color[0]"
         :style="`background-color: rgb(${color[1].join()});`"
         :class="{
         'border-2': color[0] == 'white',
         'border-4 border-white border-opacity-60': selected_color == color[0]
       }"
-        @click="selected_color = color[0]; show_pallete = false"
+        @click="selected_color = color[0]; show_palette = false"
       />
     </div>
   </transition>
@@ -233,17 +201,17 @@ function updateCanvas() {
   @apply scale-[0.25];
   image-rendering: pixelated;
 }
-.pallete__container {
+.palette__container {
   @apply fixed z-20 top-0 left-0;
   transform: translate(
-    min(calc(100vw - 105%), calc(v-bind(pallete_translate_x) + 10%)),
-    min(calc(100vh - 105%), calc(v-bind(pallete_translate_y) - 50%))
+    min(calc(100vw - 105%), calc(v-bind(palette_translate_x) + 10%)),
+    min(calc(100vh - 105%), calc(v-bind(palette_translate_y) - 50%))
   );
   @apply p-2 lg:p-3;
   @apply bg-white border rounded shadow-xl;
   @apply grid grid-cols-[auto_auto_auto] justify-center gap-2;
 }
-.pallete__container > * {
+.palette__container > * {
   @apply h-8 w-8 lg:h-10 lg:w-10;
   @apply cursor-pointer;
 }

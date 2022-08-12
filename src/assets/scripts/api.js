@@ -27,6 +27,7 @@ class API {
     }
 
     async fetchMap() { return (await this.get('map')).arrayBuffer() }
+    async fetchColorPalette() { return new Map(Object.entries(await (await this.get('color_palette')).json())) }
     async fetchConnectedClient() { return (await this.get('connected_client')).text() }
     async placePixel(payload) { await this.post('pixel', payload) }
 }
