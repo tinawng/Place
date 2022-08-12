@@ -18,11 +18,15 @@ var scaled_ctx
 
 const selected_color = ref("rose-500")
 const show_palette = ref(false)
+const cursor_position_x = ref("0px")
+const cursor_position_y = ref("0px")
 const palette_translate_x = ref("0px")
 const palette_translate_y = ref("0px")
+const coolbar = ref()
 
 var canvas_can_move = false
 var canvas_can_place = false
+var canvas_cooled_down = true
 const canvas_zoom = ref(5)
 const cursor_canvas_x = ref(512)
 const cursor_canvas_y = ref(512)
@@ -78,6 +82,12 @@ function registerEventListeners() {
   window.addEventListener("wheel", (e) => {
     canvas_zoom.value = numberClamp(canvas_zoom.value + (e.deltaY < 0 ? 0.2 : -0.2), 0.3, 8)
   })
+  window.addEventListener("mousemove", (e) => {
+    requestAnimationFrame(() => {
+      cursor_position_x.value = `${Math.floor(e.clientX)}px`
+      cursor_position_y.value = `${Math.floor(e.clientY)}px`
+    })
+  })
 
   scaled_canvas.value.addEventListener("mousedown", (e) => {
     if (e.button == 0) {
@@ -88,18 +98,25 @@ function registerEventListeners() {
       show_palette.value = false
     } else if (e.button == 2) {
       show_palette.value = !show_palette.value
-      palette_translate_x.value = `${Math.floor(e.clientX)}px`
-      palette_translate_y.value = `${Math.floor(e.clientY)}px`
+      palette_translate_x.value = cursor_position_x.value
+      palette_translate_y.value = cursor_position_y.value
     }
   })
   scaled_canvas.value.addEventListener("mouseup", (e) => {
-    if (!canvas_can_place) return
+    if (e.button != 0 || !canvas_can_place || !canvas_cooled_down) return
 
     const r = color_palette.value.get(selected_color.value)[0]
     const g = color_palette.value.get(selected_color.value)[1]
     const b = color_palette.value.get(selected_color.value)[2]
 
     $api.placePixel({ ...getCursorCanvasPosition(e), r, g, b })
+
+    coolbar.value.classList.add("coolbar_animation")
+    canvas_cooled_down = false
+    setTimeout(() => {
+      coolbar.value.classList.remove("coolbar_animation")
+      canvas_cooled_down = true
+    }, 500)
   })
   scaled_canvas.value.addEventListener("mousemove", (e) => {
     if (canvas_can_place)
@@ -183,6 +200,8 @@ function updateCanvas() {
       <icon class="w-4 lg:w-5" variant="aperture" />
     </p>
   </div>
+
+  <div ref="coolbar" class="coolbar__container"></div>
 </template>
 
 <script setup>
@@ -227,5 +246,14 @@ function updateCanvas() {
   @apply fixed bottom-6 right-6 lg:bottom-12 lg:right-12 z-10;
   @apply flex flex-col gap-4;
   @apply text-xs lg:text-sm font-medium;
+}
+.coolbar__container {
+  @apply absolute left-0 top-0;
+  @apply w-3;
+  @apply bg-red-200;
+  transform: translate(calc(v-bind(cursor_position_x) - 200%), calc(v-bind(cursor_position_y) - 50%));
+}
+.coolbar_animation {
+  animation: cooldown 0.5s linear forwards, hue-rotation 1s linear infinite;
 }
 </style>
